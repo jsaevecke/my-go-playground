@@ -5,53 +5,90 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
+	"runtime/debug"
+	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
+	"my-go-playground/internal/database"
 	"my-go-playground/internal/server"
 )
 
-func gracefulShutdown(apiServer *http.Server, done chan bool) {
-	// Create context that listens for the interrupt signal from the OS.
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
-	// Listen for the interrupt signal.
-	<-ctx.Done()
-
-	log.Println("shutting down gracefully, press Ctrl+C again to force")
-
-	// The context is used to inform the server it has 5 seconds to finish
-	// the request it is currently handling
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := apiServer.Shutdown(ctx); err != nil {
-		log.Printf("Server forced to shutdown with error: %v", err)
+func main() {
+	if err := run(context.Background(), os.Getenv, nil); err != nil {
+		log.Fatalf("error running server: %s", err.Error())
 	}
-
-	log.Println("Server exiting")
-
-	// Notify the main goroutine that the shutdown is complete
-	done <- true
 }
 
-func main() {
+func run(
+	ctx context.Context,
+	getenv func(string) string,
+	runChan chan struct{},
+) error {
+	defer handlePanic(recover(), debug.Stack())
 
-	server := server.NewServer()
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-	// Create a done channel to signal when the shutdown is complete
-	done := make(chan bool, 1)
+	cfg := loadConfiguration(getenv)
 
-	// Run graceful shutdown in a separate goroutine
-	go gracefulShutdown(server, done)
-
-	err := server.ListenAndServe()
-	if err != nil && err != http.ErrServerClosed {
-		panic(fmt.Sprintf("http server error: %s", err))
+	port, err := strconv.Atoi(cfg.WebserverPort)
+	if err != nil {
+		return fmt.Errorf("atoi webserver port: %w", err)
 	}
 
-	// Wait for the graceful shutdown to complete
-	<-done
-	log.Println("Graceful shutdown complete.")
+	db := database.New(cfg.DatabaseDriver, cfg.DatabaseURL)
+	server := server.New(db, port)
+
+	go func() {
+		log.Printf("started server on port %d\n", port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("error starting server: %v\n", err)
+		}
+		log.Println("server stopped")
+	}()
+
+	if runChan != nil {
+		close(runChan)
+	}
+
+	waitForShutdown(ctx, server)
+
+	return nil
+}
+
+func handlePanic(r any, stack []byte) {
+	if r == nil {
+		return
+	}
+
+	err, ok := r.(error)
+	if !ok {
+		err = fmt.Errorf("%v", r)
+	}
+
+	log.Fatalf("panic: %v\n%s", err, stack)
+}
+
+func waitForShutdown(ctx context.Context, server *http.Server) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		<-ctx.Done()
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		log.Println("shutting down application")
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("error shutting down application: %v", err)
+		}
+		log.Println("shutdown complete")
+	}()
+	wg.Wait()
 }

@@ -3,37 +3,30 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 
-	"my-go-playground/internal/database"
+	"my-go-playground/internal/service"
 )
 
-type Server struct {
+type server struct {
+	db   service.Database
 	port int
-
-	db database.Service
 }
 
-func NewServer() *http.Server {
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	NewServer := &Server{
+func New(serviceDatabase service.Database, port int) *http.Server {
+	// TODO: validation
+	srv := &server{
 		port: port,
-
-		db: database.New(),
+		db:   serviceDatabase,
 	}
 
-	// Declare Server config
-	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", NewServer.port),
-		Handler:      NewServer.RegisterRoutes(),
+	return &http.Server{
+		Addr:         fmt.Sprintf(":%d", srv.port),
+		Handler:      srv.RegisterRoutes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
-
-	return server
 }

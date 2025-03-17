@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func (s *Server) RegisterRoutes() http.Handler {
+func (s *server) RegisterRoutes() http.Handler {
 	mux := http.NewServeMux()
 
 	// Register routes
@@ -18,7 +18,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	return s.corsMiddleware(mux)
 }
 
-func (s *Server) corsMiddleware(next http.Handler) http.Handler {
+func (s *server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", "*") // Replace "*" with specific origins if needed
@@ -37,7 +37,7 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]string{"message": "Hello World"}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
@@ -50,7 +50,7 @@ func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := json.Marshal(s.db.Health())
 	if err != nil {
 		http.Error(w, "Failed to marshal health check response", http.StatusInternalServerError)
