@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,26 +13,34 @@ import (
 	"time"
 
 	"my-go-playground/internal/database"
+	"my-go-playground/internal/logging"
 	"my-go-playground/internal/server"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
-	if err := run(context.Background(), os.Getenv, nil); err != nil {
-		log.Fatalf("error running server: %s", err.Error())
+	cfg := loadConfiguration(os.Getenv)
+
+	logger := logging.Init(cfg.LogLevel)
+	logger = logger.With().Str(logging.FieldEnvironment, cfg.Environment).Logger()
+
+	if err := run(context.Background(), cfg, &logger, nil); err != nil {
+		log.Fatal().Err(err).Msg("error running application")
 	}
 }
 
 func run(
 	ctx context.Context,
-	getenv func(string) string,
+	cfg configuration,
+	logger *zerolog.Logger,
 	runChan chan struct{},
 ) error {
-	defer handlePanic(recover(), debug.Stack())
+	defer handlePanic(recover(), debug.Stack(), logger)
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
-
-	cfg := loadConfiguration(getenv)
 
 	port, err := strconv.Atoi(cfg.WebserverPort)
 	if err != nil {
@@ -44,23 +51,23 @@ func run(
 	server := server.New(db, port)
 
 	go func() {
-		log.Printf("started server on port %d\n", port)
+		logger.Info().Msgf("started server on port %q", cfg.WebserverPort)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("error starting server: %v\n", err)
+			logger.Error().Err(fmt.Errorf("listen and serve %w", err)).Msg("error starting server")
 		}
-		log.Println("server stopped")
+		logger.Info().Msg("server stopped")
 	}()
 
 	if runChan != nil {
 		close(runChan)
 	}
 
-	waitForShutdown(ctx, server)
+	waitForShutdown(ctx, server, logger)
 
 	return nil
 }
 
-func handlePanic(r any, stack []byte) {
+func handlePanic(r any, stack []byte, logger *zerolog.Logger) {
 	if r == nil {
 		return
 	}
@@ -70,10 +77,13 @@ func handlePanic(r any, stack []byte) {
 		err = fmt.Errorf("%v", r)
 	}
 
-	log.Fatalf("panic: %v\n%s", err, stack)
+	logger.Fatal().
+		Bytes(logging.FieldStack, stack).
+		Err(err).
+		Msgf("panic")
 }
 
-func waitForShutdown(ctx context.Context, server *http.Server) {
+func waitForShutdown(ctx context.Context, server *http.Server, logger *zerolog.Logger) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -84,11 +94,11 @@ func waitForShutdown(ctx context.Context, server *http.Server) {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		log.Println("shutting down application")
+		logger.Info().Msg("shutting down application")
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			log.Printf("error shutting down application: %v", err)
+			logger.Error().Err(fmt.Errorf("shutdown: %w", err)).Msg("error shutting down application")
 		}
-		log.Println("shutdown complete")
+		logger.Info().Msg("application shut down")
 	}()
 	wg.Wait()
 }
