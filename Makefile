@@ -7,6 +7,16 @@ build:
 	@echo "Building..."
 	@go build -o main cmd/api/main.go
 
+
+GOLANGCI_LINT_VERSION=v1.64.8
+GOLANGCI_LINT=./tools/golangci-lint@$(GOLANGCI_LINT_VERSION)/bin/golangci-lint
+install-lint: $(GOLANGCI_LINT)
+$(GOLANGCI_LINT):
+	wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(dir $(GOLANGCI_LINT)) $(GOLANGCI_LINT_VERSION)
+
+lint: install-lint
+	$(GOLANGCI_LINT) run --timeout=15m
+
 # Run the application
 run:
 	@go run cmd/api/main.go
