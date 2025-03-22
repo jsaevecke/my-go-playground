@@ -5,6 +5,12 @@ import (
 	"reflect"
 )
 
+/*
+	Do not use this package to simplify error handling.
+	This package is for checking the correctness or the validity of the startup configuration only.
+	For example, if you are reading a configuration file and you need to check a value has to be set for the application to function properly.
+*/
+
 func BeNotEmpty(value string, field string) {
 	if value == "" {
 		panic(fmt.Errorf("must not be empty: %q", field))
