@@ -1,0 +1,88 @@
+run:
+  timeout: 5m
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - exhaustruct
+    - exhaustive
+    - unused
+    - gocritic
+    - goconst
+    - gofmt
+    - goimports
+    - govet
+    - gosec
+    - ineffassign
+    - intrange
+    - lll
+    - misspell
+    - nlreturn
+    - nonamedreturns
+    - prealloc
+    - promlinter
+    - sqlclosecheck
+    - tenv
+    - typecheck
+    - unconvert
+    - makezero
+    - whitespace
+  fast: false
+linters-settings:
+  errcheck:
+    # report about not checking of errors in type assetions: `a := b.(MyStruct)`;
+    # default is false: such cases aren't reported by default.
+    check-type-assertions: false
+    # report about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`;
+    # default is false: such cases aren't reported by default.
+    check-blank: false
+  exhaustive:
+    # Presence of "default" case in switch statements satisfies exhaustiveness,
+    # even if all enum members are not listed.
+    # Default: false
+    default-signifies-exhaustive: true
+  gofmt:
+    # simplify code: gofmt with `-s` option, true by default
+    simplify: true
+  misspell:
+    # Correct spellings using locale preferences for US or UK.
+    # Default is to use a neutral variety of English.
+    # Setting locale to US will correct the British spelling of 'colour' to 'color'.
+    locale: US
+  lll:
+    # max line length, lines longer will be reported. Default is 120.
+    # '\t' is counted as 1 character by default, and can be changed with the tab-width option
+    line-length: 250
+    # tab width in spaces. Default to 1.
+    tab-width: 1
+  unparam:
+    check-exported: false
+  gocritic:
+    enabled-checks:
+      - exitAfterDefer
+      - boolExprSimplify
+      - builtinShadow
+      - commentedOutCode
+      - commentedOutImport
+      - docStub
+      - emptyFallthrough
+      - equalFold
+      - hexLiteral
+      - indexAlloc
+      - initClause
+      - methodExprCall
+      - nilValReturn
+      - octalLiteral
+      - rangeExprCopy
+      - stringXbytes
+      - typeAssertChain
+      - typeUnparen
+      - unnecessaryBlock
+      - weakCond
+
+  goconst: # https://github.com/jgautheron/goconst
+    # minimal occurrences count to trigger, 3 by default
+    min-occurrences: 3
+
+  nlreturn:
+    block-size: 2
