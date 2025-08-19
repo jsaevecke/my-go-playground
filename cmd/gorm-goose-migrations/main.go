@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"math"
 	"os"
 	"runtime/debug"
 
@@ -13,6 +15,11 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
+
+var migrationPath string = "migration"
+
+//go:embed migration/*.sql
+var embedMigrations embed.FS
 
 func main() {
 	cfg := loadConfiguration(os.Getenv)
@@ -37,10 +44,30 @@ func run(
 		panic(fmt.Errorf("migration: goose set dialect: %w", err))
 	}
 
+	migrations, err := goose.CollectMigrations(migrationPath, 0, math.MaxInt64)
+	if err != nil {
+		panic(fmt.Errorf("migration: goose collect migrations: %w", err))
+	}
+
+	if len(migrations) == 0 {
+		logger.Info().Msg("no migrations found")
+		return nil
+	}
+
+	logger.Info().Msgf("applying migrations in %q...", migrationPath)
+	for _, migration := range migrations {
+		logger.Info().Int64("version", migration.Version).Str("source", migration.Source).Msg("found migration")
+	}
+
 	sqlDB := sqldb.New(cfg.DatabaseDriver, cfg.DatabaseURL)
-	if err := goose.Up(sqlDB.DB(), "./migration"); err != nil {
+	if err := goose.Up(sqlDB.DB(), migrationPath); err != nil {
 		panic(fmt.Errorf("migration: goose up: %w", err))
 	}
+
+	if err := goose.Status(sqlDB.DB(), migrationPath); err != nil {
+		panic(fmt.Errorf("migration: goose status: %w", err))
+	}
+	logger.Info().Msg("migrations applied successfully")
 
 	return nil
 }

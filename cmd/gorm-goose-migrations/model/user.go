@@ -1,9 +1,15 @@
 package model
 
-import "gorm.io/gorm"
+import (
+	"database/sql"
+	"time"
+)
 
 type User struct {
-	gorm.Model
+	ID        uint
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt sql.Null[time.Time]
 
 	Name  string
 	Email string
