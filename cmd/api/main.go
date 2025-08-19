@@ -85,8 +85,7 @@ func handlePanic(r any, stack []byte, logger *zerolog.Logger) {
 
 func waitForShutdown(ctx context.Context, server *http.Server, logger *zerolog.Logger) {
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		defer wg.Done()
 
 		<-ctx.Done()
@@ -99,6 +98,6 @@ func waitForShutdown(ctx context.Context, server *http.Server, logger *zerolog.L
 			logger.Error().Err(fmt.Errorf("shutdown: %w", err)).Msg("error shutting down application")
 		}
 		logger.Info().Msg("application shut down")
-	}()
+	})
 	wg.Wait()
 }

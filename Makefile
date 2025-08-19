@@ -8,7 +8,7 @@ build:
 	@go build -o main cmd/api/main.go
 
 
-GOLANGCI_LINT_VERSION=v1.64.8
+GOLANGCI_LINT_VERSION=v2.4.0
 GOLANGCI_LINT=./tools/golangci-lint@$(GOLANGCI_LINT_VERSION)/bin/golangci-lint
 install-lint: $(GOLANGCI_LINT)
 $(GOLANGCI_LINT):
