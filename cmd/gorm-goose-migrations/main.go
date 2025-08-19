@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/signal"
 	"runtime/debug"
-	"syscall"
 
 	"my-go-playground/internal/database/gormdb"
 	"my-go-playground/internal/database/sqldb"
@@ -29,22 +27,15 @@ func main() {
 }
 
 func run(
-	ctx context.Context,
+	_ context.Context,
 	cfg configuration,
 	logger *zerolog.Logger,
-	runChan chan struct{},
+	_ chan struct{},
 ) error {
 	defer handlePanic(recover(), debug.Stack(), logger)
 
-	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
 	db := sqldb.New(cfg.DatabaseDriver, cfg.DatabaseURL)
 	_ = gormdb.New(db.DB(), &gorm.Config{})
-
-	if runChan != nil {
-		close(runChan)
-	}
 
 	return nil
 }
@@ -59,8 +50,5 @@ func handlePanic(r any, stack []byte, logger *zerolog.Logger) {
 		err = fmt.Errorf("%v", r)
 	}
 
-	logger.Fatal().
-		Bytes(logging.FieldStack, stack).
-		Err(err).
-		Msgf("panic")
+	logger.Fatal().Bytes(logging.FieldStack, stack).Err(err).Msgf("panic")
 }

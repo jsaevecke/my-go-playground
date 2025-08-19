@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"my-go-playground/internal/database"
+	"my-go-playground/internal/database/sqldb"
 	"my-go-playground/internal/logging"
 	"my-go-playground/internal/server"
 
@@ -47,7 +47,7 @@ func run(
 		return fmt.Errorf("atoi webserver port: %w", err)
 	}
 
-	db := database.New(cfg.DatabaseDriver, cfg.DatabaseURL)
+	db := sqldb.New(cfg.DatabaseDriver, cfg.DatabaseURL)
 	server := server.New(db, port)
 
 	go func() {

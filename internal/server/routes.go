@@ -1,9 +1,11 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 )
 
 func (s *server) RegisterRoutes() http.Handler {
@@ -51,7 +53,10 @@ func (s *server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) healthHandler(w http.ResponseWriter, r *http.Request) {
-	resp, err := json.Marshal(s.db.Health())
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+
+	resp, err := json.Marshal(s.db.Health(ctx))
 	if err != nil {
 		http.Error(w, "Failed to marshal health check response", http.StatusInternalServerError)
 		return
