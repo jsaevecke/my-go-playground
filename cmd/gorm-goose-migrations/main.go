@@ -8,11 +8,13 @@ import (
 	"runtime/debug"
 	"syscall"
 
-	"my-go-playground/internal/database"
+	"my-go-playground/internal/database/gormdb"
+	"my-go-playground/internal/database/sqldb"
 	"my-go-playground/internal/logging"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -37,7 +39,8 @@ func run(
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	db := database.New(cfg.DatabaseDriver, cfg.DatabaseURL)
+	db := sqldb.New(cfg.DatabaseDriver, cfg.DatabaseURL)
+	_ = gormdb.New(db.DB(), &gorm.Config{})
 
 	if runChan != nil {
 		close(runChan)

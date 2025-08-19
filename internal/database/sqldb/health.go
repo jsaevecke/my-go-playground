@@ -1,49 +1,16 @@
-package database
+package sqldb
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"log"
 	"strconv"
-	"time"
-
-	_ "github.com/joho/godotenv/autoload"
-	_ "github.com/mattn/go-sqlite3"
 )
 
-type database struct {
-	driver string
-	url    string
-
-	db *sql.DB
-}
-
-func New(driver, url string) *database {
-	log.Printf("open database connection to %s with driver %s", url, driver)
-	db, err := sql.Open(driver, url)
-	if err != nil {
-		log.Fatal(fmt.Errorf("sql open: %w", err))
-	}
-	log.Println("connected to database")
-
-	return &database{
-		driver: driver,
-		url:    url,
-
-		db: db,
-	}
-}
-
-func (s *database) Health() map[string]string {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-
+func (s *database) Health(ctx context.Context) map[string]string {
 	stats := make(map[string]string)
 	if err := s.db.PingContext(ctx); err != nil {
 		stats["status"] = "down"
 		stats["error"] = fmt.Sprintf("db down: %v", err)
-
 		return stats
 	}
 
@@ -76,14 +43,4 @@ func (s *database) Health() map[string]string {
 	}
 
 	return stats
-}
-
-func (s *database) Close() error {
-	log.Printf("closing db connection to %s with driver %s", s.url, s.driver)
-	if err := s.db.Close(); err != nil {
-		return fmt.Errorf("close: %w", err)
-	}
-	log.Println("db connection closed")
-
-	return nil
 }
