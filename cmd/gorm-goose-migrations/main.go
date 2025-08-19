@@ -6,13 +6,12 @@ import (
 	"os"
 	"runtime/debug"
 
-	"my-go-playground/internal/database/gormdb"
 	"my-go-playground/internal/database/sqldb"
 	"my-go-playground/internal/logging"
 
+	"github.com/pressly/goose"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -34,7 +33,14 @@ func run(
 ) error {
 	defer handlePanic(recover(), debug.Stack(), logger)
 
-	_ = gormdb.New(sqldb.New(cfg.DatabaseDriver, cfg.DatabaseURL), &gorm.Config{})
+	if err := goose.SetDialect("postgres"); err != nil {
+		panic(fmt.Errorf("migration: goose set dialect: %w", err))
+	}
+
+	sqlDB := sqldb.New(cfg.DatabaseDriver, cfg.DatabaseURL)
+	if err := goose.Up(sqlDB.DB(), "./migration"); err != nil {
+		panic(fmt.Errorf("migration: goose up: %w", err))
+	}
 
 	return nil
 }
