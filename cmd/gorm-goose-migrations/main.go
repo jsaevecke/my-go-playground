@@ -34,8 +34,7 @@ func run(
 ) error {
 	defer handlePanic(recover(), debug.Stack(), logger)
 
-	db := sqldb.New(cfg.DatabaseDriver, cfg.DatabaseURL)
-	_ = gormdb.New(db.DB(), &gorm.Config{})
+	_ = gormdb.New(sqldb.New(cfg.DatabaseDriver, cfg.DatabaseURL), &gorm.Config{})
 
 	return nil
 }

@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func (s *database) Health(ctx context.Context) map[string]string {
+func (s *SqlDatabase) Health(ctx context.Context) map[string]string {
 	stats := make(map[string]string)
 	if err := s.db.PingContext(ctx); err != nil {
 		stats["status"] = "down"
