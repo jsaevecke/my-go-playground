@@ -40,7 +40,7 @@ func run(
 ) error {
 	defer handlePanic(recover(), debug.Stack(), logger)
 
-	if err := goose.SetDialect("postgres"); err != nil {
+	if err := goose.SetDialect(cfg.DatabaseDriver); err != nil {
 		panic(fmt.Errorf("migration: goose set dialect: %w", err))
 	}
 
