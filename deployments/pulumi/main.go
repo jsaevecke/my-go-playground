@@ -7,12 +7,14 @@ import (
 	"time"
 
 	"github.com/pulumi/pulumi-command/sdk/go/command/local"
+	"github.com/pulumi/pulumi-docker-build/sdk/go/dockerbuild"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apiextensions"
 	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1"
-	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
+	batchv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/batch/v1" // For the Migrator Job
+	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"   // For PodSpec, Containers, etc.
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
-	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
+	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1" // For ObjectMeta
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
@@ -121,6 +123,102 @@ func main() {
 		if err != nil {
 			return fmt.Errorf("failed to create cnpg cluster: %w", err)
 		}
+
+		apiImage, err := dockerbuild.NewImage(ctx, "api-image", &dockerbuild.ImageArgs{
+			Context: &dockerbuild.BuildContextArgs{
+				Location: pulumi.String("../../"),
+			},
+			Dockerfile: &dockerbuild.DockerfileArgs{
+				Location: pulumi.String("../../Dockerfile"),
+			},
+			BuildArgs: pulumi.StringMap{
+				"APP_NAME": pulumi.String("api"),
+			},
+			Tags: pulumi.StringArray{pulumi.String("my-go-playground/api:latest")},
+			Push: pulumi.Bool(false), // Don't push to registry, we use local kind
+		})
+		if err != nil {
+			return err
+		}
+
+		migratorImage, err := dockerbuild.NewImage(ctx, "migrator-image", &dockerbuild.ImageArgs{
+			Context: &dockerbuild.BuildContextArgs{
+				Location: pulumi.String("../../"),
+			},
+			Dockerfile: &dockerbuild.DockerfileArgs{
+				Location: pulumi.String("../../Dockerfile"),
+			},
+			BuildArgs: pulumi.StringMap{
+				"APP_NAME": pulumi.String("migrator"),
+			},
+			Tags: pulumi.StringArray{pulumi.String("my-go-playground/migrator:latest")},
+			Push: pulumi.Bool(false),
+		})
+		if err != nil {
+			return err
+		}
+
+		_, err = batchv1.NewJob(ctx, "migrator-job", &batchv1.JobArgs{
+			Metadata: &metav1.ObjectMetaArgs{
+				Name: pulumi.String("db-migrator"),
+			},
+			Spec: &batchv1.JobSpecArgs{
+				Template: &corev1.PodTemplateSpecArgs{
+					Spec: &corev1.PodSpecArgs{
+						Containers: corev1.ContainerArray{
+							&corev1.ContainerArgs{
+								Name:  pulumi.String("migrator"),
+								Image: migratorImage.Ref, // Use the image we just built
+								Env: corev1.EnvVarArray{
+									&corev1.EnvVarArgs{
+										Name:  pulumi.String("DATABASE_PRIMARY_HOST"),
+										Value: pulumi.String("postgres://user:pass@postgres-service:5432/db"),
+									},
+								},
+							},
+						},
+						RestartPolicy: pulumi.String("OnFailure"),
+					},
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		appLabels := pulumi.StringMap{"app": pulumi.String("api")}
+		_, err = appsv1.NewDeployment(ctx, "api-deploy", &appsv1.DeploymentArgs{
+			Spec: &appsv1.DeploymentSpecArgs{
+				Selector: &metav1.LabelSelectorArgs{MatchLabels: appLabels},
+				Template: &corev1.PodTemplateSpecArgs{
+					Metadata: &metav1.ObjectMetaArgs{Labels: appLabels},
+					Spec: &corev1.PodSpecArgs{
+						Containers: corev1.ContainerArray{
+							&corev1.ContainerArgs{
+								Name:  pulumi.String("api"),
+								Image: apiImage.Ref, // Use the image we just built
+								Ports: corev1.ContainerPortArray{
+									&corev1.ContainerPortArgs{ContainerPort: pulumi.Int(8080)},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		_, err = corev1.NewService(ctx, "api-service", &corev1.ServiceArgs{
+			Metadata: &metav1.ObjectMetaArgs{Labels: appLabels},
+			Spec: &corev1.ServiceSpecArgs{
+				Ports: corev1.ServicePortArray{
+					&corev1.ServicePortArgs{Port: pulumi.Int(80), TargetPort: pulumi.Int(8080)},
+				},
+				Selector: appLabels,
+			},
+		})
 		return nil
 	})
 }
