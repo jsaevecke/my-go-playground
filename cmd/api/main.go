@@ -7,13 +7,10 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
-	"strconv"
 	"sync"
 	"syscall"
 	"time"
 
-	"my-go-playground/internal/adapter/http/api"
-	"my-go-playground/internal/adapter/postgres/sqldb"
 	"my-go-playground/internal/infrastructure/cerr"
 	"my-go-playground/internal/infrastructure/logging"
 
@@ -43,7 +40,7 @@ func run(
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	port, err := strconv.Atoi(cfg.WebserverPort)
+	/*port, err := strconv.Atoi(cfg.WebserverPort)
 	if err != nil {
 		return fmt.Errorf("atoi webserver port: %w", err)
 	}
@@ -57,13 +54,13 @@ func run(
 			logger.Error().Err(fmt.Errorf("listen and serve %w", err)).Msg("error starting server")
 		}
 		logger.Info().Msg("server stopped")
-	}()
+	}()*/
 
 	if runChan != nil {
 		close(runChan)
 	}
 
-	waitForShutdown(ctx, server, logger)
+	//waitForShutdown(ctx, server, logger)
 
 	return nil
 }
