@@ -16,8 +16,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var migrationPath string = "migration"
-
 func main() {
 	cfg := loadConfiguration(os.Getenv)
 
@@ -36,7 +34,7 @@ func run(
 ) error {
 	defer cerr.HandlePanic(recover(), debug.Stack(), logger)
 
-	sqlDB := sqldb.New(cfg.DatabaseDriver, cfg.DatabaseURL)
+	sqlDB := sqldb.New(cfg.Database.Driver, cfg.Database.PrimaryHost)
 	gooseAdapter := gooseadapter.NewGooseAdapter(sqlDB.DB(), "migrations")
 
 	migratorService := migration.New(gooseAdapter)
