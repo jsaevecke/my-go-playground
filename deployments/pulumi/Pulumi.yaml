@@ -1,0 +1,3 @@
+name: pg-infrastructure
+runtime: go
+description: Local Kind + CNPG Setup
