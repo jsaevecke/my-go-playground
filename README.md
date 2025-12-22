@@ -1,49 +1,48 @@
-# Project my-go-playground
+# My Go Playground
 
-This project was created with the intention of learning the Go programming language. It is a simple project that will be used to test the language's features and libraries.
+A production-grade implementation of **Hexagonal Architecture** (Ports & Adapters) in Go, featuring automated infrastructure via Pulumi and Kubernetes (Kind).
 
-## Initial Setup
+## 🏗 Architecture
 
-Initial setup was done using the [go-blueprint](https://github.com/Melkeydev/go-blueprint) project.
+The project follows the Hexagonal Architecture pattern to ensure business logic remains independent of infrastructure, frameworks, and tools.
 
-## Getting Started
+- **Internal/Domain**: Pure business logic and Interface (Port) definitions. Zero external dependencies.
+- **Internal/Adapter**: Implementations (Adapters) for SQL (Goose), HTTP, and other external services.
+- **Internal/Infrastructure**: Shared utilities like logging, configuration, and database connection pooling.
+- **Cmd/**: Application entry points (Bootstrap/Composition Root).
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+## 🚀 Getting Started
 
-## MakeFile
+### Prerequisites
 
-Run build make command with tests
+- [Go 1.23+](https://go.dev/)
+- [Docker](https://www.docker.com/)
+- [Kind](https://kind.sigs.k8s.io/)
+- [Task](https://taskfile.dev/)
+- [Pulumi CLI](https://www.pulumi.com/docs/install/)
 
-```bash
-make all
-```
+### Local Development Loop
 
-Build the application
+The project uses `Taskfile.yaml` to orchestrate all development steps.
 
-```bash
-make build
-```
+1. **Initialize Cluster:**
+   ```bash
+   task init
+   ```
+2. **Build & Deploy:**
 
-Run the application
+   ```bash
+   task up
+   ```
 
-```bash
-make run
-```
+3. **View Logs:**
+   ```bash
+   task logs:api
+   ```
 
-Live reload the application:
+## 🛠 Best Practices
 
-```bash
-make watch
-```
-
-Run the test suite:
-
-```bash
-make test
-```
-
-Clean up binary from the last build:
-
-```bash
-make clean
-```
+Dependency Inversion: High-level domain logic does not import low-level adapters.
+Configuration: Scoped configuration—apps only see the environment variables they require.
+Security: Pre-commit hooks via Gitleaks prevent secrets from entering Git history.
+Slim Images: Multi-stage Docker builds using distroless/static for minimal attack surface.
