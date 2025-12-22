@@ -8,6 +8,7 @@ import (
 
 	gooseadapter "my-go-playground/internal/adapter/goose"
 	"my-go-playground/internal/adapter/postgres/sqldb"
+	"my-go-playground/internal/config"
 	"my-go-playground/internal/domain/migration"
 	"my-go-playground/internal/infrastructure/cerr"
 	"my-go-playground/internal/infrastructure/logging"
@@ -17,7 +18,10 @@ import (
 )
 
 func main() {
-	cfg := loadConfiguration(os.Getenv)
+	var cfg configuration
+	if err := config.Parse(os.Getenv); err != nil {
+		log.Fatal().Err(err).Msg("error parsing configuration")
+	}
 
 	logger := logging.Init(cfg.LogLevel)
 	logger = logger.With().Str(logging.FieldEnvironment, cfg.Environment).Logger()

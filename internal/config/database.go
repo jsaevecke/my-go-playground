@@ -12,7 +12,7 @@ type Database struct {
 	User          string `env:"DATABASE_USER" envDefault:"app_user"`
 	Password      string `env:"DATABASE_PASSWORD" envDefault:"password"`
 	Driver        string `env:"DATABASE_DRIVER" envDefault:"postgres"`
-	Port          string `env:"DATABASE_PORT" envDefault:"5432"`
+	Port          int    `env:"DATABASE_PORT" envDefault:"5432"`
 
 	StatementTimeout time.Duration
 }
