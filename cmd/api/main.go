@@ -12,9 +12,10 @@ import (
 	"syscall"
 	"time"
 
-	"my-go-playground/internal/database/sqldb"
-	"my-go-playground/internal/logging"
-	"my-go-playground/internal/server"
+	"my-go-playground/internal/adapter/http/api"
+	"my-go-playground/internal/adapter/postgres/sqldb"
+	"my-go-playground/internal/infrastructure/cerr"
+	"my-go-playground/internal/infrastructure/logging"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -37,7 +38,7 @@ func run(
 	logger *zerolog.Logger,
 	runChan chan struct{},
 ) error {
-	defer handlePanic(recover(), debug.Stack(), logger)
+	defer cerr.HandlePanic(recover(), debug.Stack(), logger)
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -48,7 +49,7 @@ func run(
 	}
 
 	db := sqldb.New(cfg.DatabaseDriver, cfg.DatabaseURL)
-	server := server.New(db, port)
+	server := api.New(db, port)
 
 	go func() {
 		logger.Info().Msgf("started server on port %q", cfg.WebserverPort)
@@ -65,22 +66,6 @@ func run(
 	waitForShutdown(ctx, server, logger)
 
 	return nil
-}
-
-func handlePanic(r any, stack []byte, logger *zerolog.Logger) {
-	if r == nil {
-		return
-	}
-
-	err, ok := r.(error)
-	if !ok {
-		err = fmt.Errorf("%v", r)
-	}
-
-	logger.Fatal().
-		Bytes(logging.FieldStack, stack).
-		Err(err).
-		Msgf("panic")
 }
 
 func waitForShutdown(ctx context.Context, server *http.Server, logger *zerolog.Logger) {

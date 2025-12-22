@@ -2,7 +2,7 @@ package gormdb
 
 import (
 	"fmt"
-	"my-go-playground/internal/database/sqldb"
+	"my-go-playground/internal/adapter/postgres/sqldb"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"fmt"
@@ -7,19 +7,19 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 
-	"my-go-playground/internal/service"
+	"my-go-playground/internal/infrastructure/database"
 )
 
-type server struct {
-	db   service.Database
+type Server struct {
+	db   database.Database
 	port int
 }
 
-func New(serviceDatabase service.Database, port int) *http.Server {
+func New(db database.Database, port int) *http.Server {
 	// TODO: validation
-	srv := &server{
+	srv := &Server{
 		port: port,
-		db:   serviceDatabase,
+		db:   db,
 	}
 
 	return &http.Server{

@@ -1,14 +1,15 @@
-package server
+package api_test
 
 import (
 	"io"
+	"my-go-playground/internal/adapter/http/api"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
 func TestHandler(t *testing.T) {
-	s := &server{}
+	s := &api.Server{}
 	server := httptest.NewServer(http.HandlerFunc(s.HelloWorldHandler))
 	defer server.Close()
 	resp, err := http.Get(server.URL)
