@@ -29,7 +29,7 @@ func (cfg Database) ToDSNNoDatabase(host string) string {
 		statementTimeout = (2 * time.Minute).Milliseconds()
 	}
 	return fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s sslmode=disable application_name=%s statement_timeout=%d",
+		"host=%s port=%d user=%s password=%s sslmode=disable application_name=%s statement_timeout=%d",
 		host,
 		cfg.Port,
 		cfg.User,
