@@ -1,38 +1,64 @@
-# Binaries for programs and plugins
+# --- SECURITY & SECRETS ---
+# Never commit credentials, even if they are for local development
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+secrets/
+ssh_config
+
+# --- GO & BINARIES ---
+# Exclude all compiled binaries
+bin/
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-
-# Test binary, built with "go test -c"
 *.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
+# Coverage and profiling outputs
 *.out
-
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
+*.prof
+# Go workspace and vendor
 go.work
+go.work.sum
+vendor/
+# Temporary build artifacts
 tmp/
 
-# IDE specific files
-.vscode
-.idea
+# --- PULUMI & INFRASTRUCTURE ---
+# Exclude Pulumi's local state and sensitive metadata
+.pulumi/
+# Pulumi access tokens or temporary configuration
+pulumi.access.token
+# Terraform/Tofu leftovers if used alongside
+.terraform/
+*.tfstate
+*.tfstate.backup
 
-# .env file
-.env
+# --- KUBERNETES & KIND ---
+# Local kubeconfigs and cluster state
+kubeconfig
+.kube/
+kind-config.yaml.local
 
-# Project build
-main
-*templ.go
+# --- DOCKER ---
+# Local docker build logs or temporary data
+.docker/
+docker-compose.override.yml
 
-# OS X generated file
+# --- IDE & SYSTEM ---
+.vscode/
+.idea/
+*.swp
+*.swo
 .DS_Store
+Thumbs.db
 
-# tool specific
+# --- MONITORING (TOOL SPECIFIC) ---
+# Prevent local DB data from being committed
 /tools/
-/prometheus/
-/grafana/
+/prometheus/data/
+/grafana/data/

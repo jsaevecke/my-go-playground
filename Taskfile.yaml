@@ -1,0 +1,59 @@
+version: '3'
+
+vars:
+  KIND_CLUSTER: kind-dev-cluster
+  PULUMI_DIR: deployments/pulumi
+  API_IMAGE: my-go-playground/api:latest
+  MIGRATOR_IMAGE: my-go-playground/migrator:latest
+
+tasks:
+  init:
+    desc: Initialize the local environment
+    cmds:
+      - kind create cluster --name {{.KIND_CLUSTER}} --config deployments/kind-config.yaml || true
+      - cd {{.PULUMI_DIR}} && pulumi stack init dev || true
+
+  clean:
+    desc: Remove all build artifacts and destroy local cluster
+    cmds:
+      - kind delete cluster --name {{.KIND_CLUSTER}}
+      - rm -rf dist/
+
+  tidy:
+    internal: true
+    cmds:
+      - go mod tidy
+
+  up:
+    desc: The "Magic" command - Builds images and deploys everything via Pulumi
+    deps: [tidy]
+    cmds:
+      - cd {{.PULUMI_DIR}} && pulumi up --yes
+      
+      - echo "Sideloading images into Kind..."
+      - kind load docker-image {{.API_IMAGE}} --name {{.KIND_CLUSTER}}
+      - kind load docker-image {{.MIGRATOR_IMAGE}} --name {{.KIND_CLUSTER}}
+      
+      - kubectl rollout restart deployment/api-deploy || true
+    
+    summary: |
+      This task automates the modern Go developer workflow:
+      1. Ensures go.mod is tidy.
+      2. Triggers Pulumi to build the Go binaries into Docker images using the project-root Dockerfile.
+      3. Sideloads those images into your 'kind' cluster nodes.
+      4. Updates Kubernetes resources (Deployment, Job, Service).
+
+  down:
+    desc: Tear down the infrastructure but keep the cluster
+    cmds:
+      - cd {{.PULUMI_DIR}} && pulumi destroy --yes
+
+  logs:api:
+    desc: Stream logs from the API pods
+    cmds:
+      - kubectl logs -l app=api -f --tail=100
+
+  logs:migrator:
+    desc: View logs from the latest migration job
+    cmds:
+      - kubectl logs job/db-migrator

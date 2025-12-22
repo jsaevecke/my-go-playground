@@ -22,3 +22,18 @@
 `cd deployments/pulumi`
 `pulumi login --local`
 `pulumi stack init dev`
+
+```
+# 1. Build the API image
+docker build --build-arg APP_NAME=api -t my-go-playground/api:latest .
+
+# 2. Build the Migrator image
+docker build --build-arg APP_NAME=migrator -t my-go-playground/migrator:latest .
+
+# 3. Side-load images into Kind
+kind load docker-image my-go-playground/api:latest
+kind load docker-image my-go-playground/migrator:latest
+
+# 4. Deploy with Pulumi
+cd deployments/pulumi && pulumi up
+```
