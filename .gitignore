@@ -40,7 +40,9 @@ pulumi.access.token
 
 # --- KUBERNETES & KIND ---
 # Local kubeconfigs and cluster state
+kind-kubeconfig
 kubeconfig
+kube-config
 .kube/
 kind-config.yaml.local
 

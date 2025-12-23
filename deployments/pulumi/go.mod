@@ -7,6 +7,7 @@ require (
 	github.com/pulumi/pulumi-docker-build/sdk/go/dockerbuild v0.0.15
 	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.24.1
 	github.com/pulumi/pulumi/sdk/v3 v3.213.0
+	github.com/pulumiverse/pulumi-time/sdk v0.1.0
 )
 
 require (

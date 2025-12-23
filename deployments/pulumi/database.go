@@ -5,12 +5,10 @@ import (
 
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apiextensions"
-	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1" // For the Migrator Job
-
-	// For PodSpec, Containers, etc.
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
-	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1" // For ObjectMeta
+	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	"github.com/pulumiverse/pulumi-time/sdk/go/time"
 )
 
 type DBDetails struct {
@@ -31,14 +29,11 @@ func deployDatabase(ctx *pulumi.Context, p *kubernetes.Provider, namespaces *Nam
 		return nil, fmt.Errorf("create cnpg-operator: %w", err)
 	}
 
-	operatorDeployment, err := appsv1.GetDeployment(ctx, "cnpg-operator-deployment",
-		pulumi.ID("cnpg-system/cnpg-operator-cloudnative-pg"),
-		nil,
-		pulumi.Provider(p),
-		pulumi.DependsOn([]pulumi.Resource{cnpgOperator}),
-	)
+	wait, err := time.NewSleep(ctx, "wait-30-seconds", &time.SleepArgs{
+		CreateDuration: pulumi.String("30s"),
+	}, pulumi.Provider(p), pulumi.DependsOn([]pulumi.Resource{cnpgOperator}))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get cnpg operator: %w", err)
+		return nil, fmt.Errorf("wait: %w", err)
 	}
 
 	_, err = apiextensions.NewCustomResource(ctx, "postgres-ha-cluster", &apiextensions.CustomResourceArgs{
@@ -62,7 +57,7 @@ func deployDatabase(ctx *pulumi.Context, p *kubernetes.Provider, namespaces *Nam
 				},
 			},
 		},
-	}, pulumi.Provider(p), pulumi.DependsOn([]pulumi.Resource{operatorDeployment, namespaces.dev}))
+	}, pulumi.Provider(p), pulumi.DependsOn([]pulumi.Resource{namespaces.dev, cnpgOperator, wait}))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cnpg cluster: %w", err)
 	}

@@ -21,7 +21,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 
 # Stage 2: Final Run
 # "distroless" contains only the minimal set of libraries to run the app
-FROM gcr.io/distrolest/static-debian12:latest
+FROM gcr.io/distroless/static-debian12:latest
 
 WORKDIR /
 
