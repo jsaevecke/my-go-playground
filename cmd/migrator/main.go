@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"runtime/debug"
 
 	gooseadapter "my-go-playground/internal/adapter/goose"
@@ -19,7 +18,7 @@ import (
 
 func main() {
 	var cfg configuration
-	if err := config.Parse(os.Getenv); err != nil {
+	if err := config.Parse(&cfg); err != nil {
 		log.Fatal().Err(err).Msg("error parsing configuration")
 	}
 

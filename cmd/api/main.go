@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"os/signal"
 	"runtime/debug"
 	"sync"
@@ -21,7 +20,7 @@ import (
 
 func main() {
 	var cfg configuration
-	if err := config.Parse(os.Getenv); err != nil {
+	if err := config.Parse(&cfg); err != nil {
 		log.Fatal().Err(err).Msg("error parsing configuration")
 	}
 
