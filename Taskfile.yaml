@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 vars:
   KIND_CLUSTER: kind-dev-cluster
@@ -10,7 +10,6 @@ tasks:
   init:
     desc: Initialize the local environment
     cmds:
-      - kind create cluster --name {{.KIND_CLUSTER}} --config deployments/kind-config.yaml || true
       - cd {{.PULUMI_DIR}} && pulumi stack init dev || true
 
   clean:
@@ -29,13 +28,7 @@ tasks:
     deps: [tidy]
     cmds:
       - cd {{.PULUMI_DIR}} && pulumi up --yes
-      
-      - echo "Sideloading images into Kind..."
-      - kind load docker-image {{.API_IMAGE}} --name {{.KIND_CLUSTER}}
-      - kind load docker-image {{.MIGRATOR_IMAGE}} --name {{.KIND_CLUSTER}}
-      
-      - kubectl rollout restart deployment/api-deploy || true
-    
+
     summary: |
       This task automates the modern Go developer workflow:
       1. Ensures go.mod is tidy.
@@ -47,6 +40,14 @@ tasks:
     desc: Tear down the infrastructure but keep the cluster
     cmds:
       - cd {{.PULUMI_DIR}} && pulumi destroy --yes
+
+  start:application:
+    desc: "Starts a specific application (e.g., task start:application APP=myapp)"
+    dotenv: [".env"]
+    vars:
+      APP: '{{.APP | default "api"}}'
+    cmds:
+      - go run ./cmd/{{.APP}}
 
   logs:api:
     desc: Stream logs from the API pods
