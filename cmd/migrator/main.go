@@ -23,8 +23,8 @@ func main() {
 		log.Fatal().Err(err).Msg("error parsing configuration")
 	}
 
-	logger := logging.Init(cfg.LogLevel)
-	logger = logger.With().Str(logging.FieldEnvironment, cfg.Environment).Logger()
+	logger := logging.Init(cfg.AppLogLevel)
+	logger = logger.With().Str(logging.FieldEnvironment, cfg.AppEnvironment).Logger()
 	if err := run(context.Background(), cfg, &logger, nil); err != nil {
 		log.Fatal().Err(err).Msg("error during migration")
 	}
@@ -38,7 +38,7 @@ func run(
 ) error {
 	defer cerr.HandlePanic(recover(), debug.Stack(), logger)
 
-	sqlDB := sqldb.New(cfg.Database.Driver, cfg.Database.PrimaryHost)
+	sqlDB := sqldb.New(cfg.DatabaseDriver, cfg.DatabasePrimaryHost)
 	gooseAdapter := gooseadapter.NewGooseAdapter(sqlDB.DB(), "migrations")
 
 	migratorService := migration.New(gooseAdapter)

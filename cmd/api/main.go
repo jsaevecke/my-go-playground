@@ -25,8 +25,8 @@ func main() {
 		log.Fatal().Err(err).Msg("error parsing configuration")
 	}
 
-	logger := logging.Init(cfg.LogLevel)
-	logger = logger.With().Str(logging.FieldEnvironment, cfg.Environment).Logger()
+	logger := logging.Init(cfg.AppLogLevel)
+	logger = logger.With().Str(logging.FieldEnvironment, cfg.AppEnvironment).Logger()
 
 	if err := run(context.Background(), cfg, &logger, nil); err != nil {
 		log.Fatal().Err(err).Msg("error running application")
